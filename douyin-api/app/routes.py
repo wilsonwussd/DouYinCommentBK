@@ -55,6 +55,9 @@ def login():
         if not user or not user.check_password(password):
             return jsonify({'error': '用户名或密码错误'}), 401
             
+        # 更新最后登录时间
+        user.update_login_time()
+            
         access_token = create_access_token(identity=username)
         return jsonify({'access_token': access_token}), 200
     except Exception as e:
@@ -94,6 +97,32 @@ def register():
             'error': '注册失败',
             'detail': str(e),
             'traceback': traceback.format_exc()
+        }), 500
+
+@api.route('/users/me', methods=['GET'])
+@jwt_required()
+def get_user_info():
+    """获取当前用户信息"""
+    try:
+        # 从 JWT 中获取用户名
+        username = get_jwt_identity()
+        user = User.query.filter_by(username=username).first()
+        
+        if not user:
+            return jsonify({'error': '用户不存在'}), 404
+            
+        return jsonify({
+            'username': user.username,
+            'created_at': user.created_at.isoformat() if user.created_at else None,
+            'last_login': user.last_login.isoformat() if user.last_login else None,
+            'status': 'active'
+        }), 200
+    except Exception as e:
+        logger.error(f"获取用户信息失败: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'error': '获取用户信息失败',
+            'detail': str(e)
         }), 500
 
 @api.route('/comments/collect', methods=['POST'])
