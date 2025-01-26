@@ -1,6 +1,123 @@
-# 抖音评论采集 API 服务
+# 抖音评论采集后端服务
 
-这是一个基于 Flask + SQLite + JWT 的抖音评论采集 API 服务。该服务提供了用户认证、评论采集和查询等功能。
+## 功能说明
+- 用户认证和授权（基于 JWT）
+- 采集指定抖音视频的一级评论和二级评论
+- 支持评论数据的分页查询和筛选
+- 用户登录时间追踪
+- 健康检查接口
+
+## 项目架构
+- **Flask**: Web 框架
+- **SQLite**: 数据存储
+- **JWT**: 用户认证
+- **SQLAlchemy**: ORM
+- **Hypercorn**: ASGI 服务器
+
+## 部署说明
+1. 安装依赖：
+```bash
+pip install -r requirements.txt
+```
+
+2. 配置环境：
+- 复制 `.env.example` 为 `.env`
+- 填入必要的配置信息（如抖音 cookie）
+
+3. 启动服务：
+```bash
+python run.py
+```
+
+## API 接口说明
+
+### 1. 用户相关接口
+
+#### 注册用户
+```
+POST /api/users/register
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "password": "testpass"
+}
+```
+
+#### 用户登录
+```
+POST /api/users/login
+Content-Type: application/json
+
+{
+    "username": "testuser",
+    "password": "testpass"
+}
+```
+返回：JWT token
+
+#### 获取用户信息
+```
+GET /api/users/me
+Authorization: Bearer <token>
+```
+返回：用户信息，包含创建时间和最后登录时间
+
+### 2. 评论采集接口
+
+#### 采集评论
+```
+POST /api/comments/collect
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+    "video_id": "7346152359719996709",
+    "max_comments": 10
+}
+```
+
+#### 获取评论列表
+```
+GET /api/comments/{video_id}?page=1&per_page=20
+Authorization: Bearer <token>
+```
+
+### 3. 系统接口
+
+#### 健康检查
+```
+GET /api/health
+```
+返回系统状态和数据库连接状态
+
+#### 环境变量测试
+```
+GET /api/test/env
+Authorization: Bearer <token>
+```
+
+## 外部访问
+- 服务地址：https://slrgzucgttzq.sealoshzh.site
+- 端口：8080
+
+## 更新日志
+
+### 2025-01-26
+- 新增用户最后登录时间追踪功能
+- 优化数据库初始化逻辑
+- 修复数据库表结构更新问题
+
+### 2025-01-25
+- 初始版本发布
+- 实现基础的评论采集功能
+- 添加用户认证系统
+
+## 注意事项
+1. 首次运行时会自动创建数据库表结构
+2. 确保 cookie 配置正确且未过期
+3. 建议使用 token 有效期内的 JWT 进行接口调用
+4. 评论采集接口为异步操作，大量评论采集可能需要较长时间
 
 ## 功能特点
 
