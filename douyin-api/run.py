@@ -5,6 +5,11 @@ from hypercorn.config import Config as HyperConfig
 from loguru import logger
 import sys
 import traceback
+from werkzeug.exceptions import NotFound
+from flask import jsonify, request
+
+# 配置信息
+EXTERNAL_DOMAIN = "https://slrgzucgttzq.sealoshzh.site"
 
 # 配置日志记录
 logger.remove()  # 移除默认的处理器
@@ -19,17 +24,32 @@ if __name__ == '__main__':
         config.bind = ["0.0.0.0:8080"]
         config.error_logger = logger.error
         config.access_logger = logger.info
-        logger.info("Starting server...")
+        logger.info(f"Starting server... External domain: {EXTERNAL_DOMAIN}")
         
-        # 配置错误处理
+        # 配置 404 错误处理
+        @app.errorhandler(404)
+        def not_found_error(error):
+            logger.warning(f"404 错误: {request.url}")
+            return jsonify({
+                'error': '请求的 URL 不存在',
+                'path': request.path,
+                'external_url': f"{EXTERNAL_DOMAIN}{request.path}"
+            }), 404
+        
+        # 配置通用错误处理
         @app.errorhandler(Exception)
         def handle_exception(e):
-            logger.error(f"Unhandled exception: {str(e)}")
+            if isinstance(e, NotFound):
+                return not_found_error(e)
+            logger.error(f"未处理的异常: {str(e)}")
             logger.error(traceback.format_exc())
-            return {"error": str(e), "traceback": traceback.format_exc()}, 500
+            return jsonify({
+                'error': str(e),
+                'traceback': traceback.format_exc()
+            }), 500
             
         asyncio.run(serve(app, config))
     except Exception as e:
-        logger.error(f"Server error: {str(e)}")
+        logger.error(f"服务器错误: {str(e)}")
         logger.error(traceback.format_exc())
         sys.exit(1) 
