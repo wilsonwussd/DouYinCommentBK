@@ -1,0 +1,57 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific
+*.log
+cookie.txt
+cookie_json.txt
+deepseek_api_key.txt
+gui_error.log
+*.xlsx
+*.csv
+归档.zip
+使用说明.txt
+
+# Windows specific
+*.exe
+*.spec
+*.bat
+!build_windows.bat
+!build_setup.bat
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride 
