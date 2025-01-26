@@ -6,8 +6,29 @@ import asyncio
 import os
 import traceback
 from loguru import logger
+from datetime import datetime
+from sqlalchemy import text
 
 api = Blueprint('api', __name__)
+
+@api.route('/health', methods=['GET'])
+def health_check():
+    """健康检查接口"""
+    try:
+        # 检查数据库连接
+        db.session.execute(text('SELECT 1'))
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logger.error(f"健康检查失败: {str(e)}")
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }), 500
 
 @api.route('/test/env', methods=['GET'])
 @jwt_required()
