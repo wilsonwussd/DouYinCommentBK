@@ -1,18 +1,28 @@
 # 抖音评论采集后端服务
 
 ## 功能说明
-- 用户认证和授权（基于 JWT）
-- 采集指定抖音视频的一级评论和二级评论
-- 支持评论数据的分页查询和筛选
-- 用户登录时间追踪
-- 健康检查接口
+- 用户认证：支持用户注册和登录，使用 JWT 进行身份验证
+- 评论采集：支持采集指定抖音视频的一级评论和二级评论
+- 评论管理：支持评论的分页查询和筛选
+- 系统监控：提供健康检查接口，监控系统状态
 
 ## 项目架构
-- **Flask**: Web 框架
-- **SQLite**: 数据存储
-- **JWT**: 用户认证
-- **SQLAlchemy**: ORM
-- **Hypercorn**: ASGI 服务器
+- 后端框架：Flask
+- 数据库：SQLite
+- 认证方式：JWT
+- ORM：SQLAlchemy
+- 服务器：Hypercorn
+
+## 目录结构
+```
+douyin-api/
+├── app/                # 核心代码模块
+├── config/            # 配置文件
+├── logs/              # 日志文件
+├── tests/             # 单元测试
+├── run.py             # 服务器启动文件
+└── deploy.py          # 自动化部署脚本
+```
 
 ## 部署说明
 1. 安装依赖：
@@ -20,104 +30,141 @@
 pip install -r requirements.txt
 ```
 
-2. 配置环境：
-- 复制 `.env.example` 为 `.env`
-- 填入必要的配置信息（如抖音 cookie）
-
-3. 启动服务：
+2. 运行服务：
 ```bash
 python run.py
 ```
+
+3. 服务配置：
+- 服务地址：`0.0.0.0:8080`
+- 外部域名：`https://slrgzucgttzq.sealoshzh.site`
 
 ## API 接口说明
 
 ### 1. 用户相关接口
 
-#### 注册用户
-```
+#### 1.1 用户注册
+```http
 POST /api/users/register
 Content-Type: application/json
 
 {
-    "username": "testuser",
-    "password": "testpass"
+    "username": "your_username",
+    "password": "your_password"
+}
+
+响应示例：
+{
+    "message": "注册成功"
 }
 ```
 
-#### 用户登录
-```
+#### 1.2 用户登录
+```http
 POST /api/users/login
 Content-Type: application/json
 
 {
-    "username": "testuser",
-    "password": "testpass"
+    "username": "your_username",
+    "password": "your_password"
+}
+
+响应示例：
+{
+    "access_token": "eyJhbGciOiJIUzI1..."
 }
 ```
-返回：JWT token
 
-#### 获取用户信息
-```
+#### 1.3 获取用户信息
+```http
 GET /api/users/me
-Authorization: Bearer <token>
-```
-返回：用户信息，包含创建时间和最后登录时间
+Authorization: Bearer <your_token>
 
-### 2. 评论采集接口
-
-#### 采集评论
+响应示例：
+{
+    "username": "testuser",
+    "created_at": "2025-01-26T15:31:57.137971",
+    "last_login": "2025-01-26T15:31:57.137971",
+    "status": "active"
+}
 ```
+
+### 2. 评论相关接口
+
+#### 2.1 采集评论
+```http
 POST /api/comments/collect
-Authorization: Bearer <token>
+Authorization: Bearer <your_token>
 Content-Type: application/json
 
 {
     "video_id": "7346152359719996709",
     "max_comments": 10
 }
+
+响应示例：
+{
+    "message": "成功采集 10 条评论",
+    "video_id": "7346152359719996709"
+}
 ```
 
-#### 获取评论列表
-```
-GET /api/comments/{video_id}?page=1&per_page=20
-Authorization: Bearer <token>
+#### 2.2 查询评论
+```http
+GET /api/comments/{video_id}?page=1&per_page=5
+Authorization: Bearer <your_token>
+
+响应示例：
+{
+    "comments": [
+        {
+            "comment_id": "7346152902128812852",
+            "content": "评论内容",
+            "created_at": "2024-01-26 12:00:00",
+            "likes": 100,
+            "reply_count": 10,
+            "user_nickname": "用户昵称"
+        }
+    ],
+    "total": 100,
+    "page": 1,
+    "per_page": 5,
+    "total_pages": 20
+}
 ```
 
 ### 3. 系统接口
 
-#### 健康检查
-```
+#### 3.1 健康检查
+```http
 GET /api/health
-```
-返回系统状态和数据库连接状态
 
-#### 环境变量测试
-```
-GET /api/test/env
-Authorization: Bearer <token>
+响应示例：
+{
+    "status": "healthy",
+    "database": "connected",
+    "timestamp": "2025-01-26T15:40:43.596759"
+}
 ```
 
-## 外部访问
-- 服务地址：https://slrgzucgttzq.sealoshzh.site
-- 端口：8080
+## 注意事项
+1. 所有需要认证的接口都需要在请求头中携带 `Authorization: Bearer <token>`
+2. 评论采集接口支持限制最大采集数量
+3. 评论查询接口支持分页，默认每页 10 条
+4. 系统会自动记录用户最后登录时间
 
 ## 更新日志
 
 ### 2025-01-26
-- 新增用户最后登录时间追踪功能
+- 新增用户最后登录时间记录
 - 优化数据库初始化逻辑
-- 修复数据库表结构更新问题
+- 新增健康检查接口
+- 完善错误处理和日志记录
 
 ### 2025-01-25
-- 初始版本发布
-- 实现基础的评论采集功能
-- 添加用户认证系统
-
-## 注意事项
-1. 首次运行时会自动创建数据库表结构
-2. 确保 cookie 配置正确且未过期
-3. 建议使用 token 有效期内的 JWT 进行接口调用
-4. 评论采集接口为异步操作，大量评论采集可能需要较长时间
+- 项目初始化
+- 实现基础用户认证功能
+- 实现评论采集和查询功能
 
 ## 功能特点
 
