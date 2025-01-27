@@ -5,6 +5,7 @@
 ## 最新更新
 
 ### 2024-01-27 更新
+- 新增 cookie 验证和更新接口
 - 修复了异步调用问题，优化了评论采集逻辑
 - 修复了 `sign_x_bogus` 签名生成问题
 - 优化了视频ID提取逻辑，现支持多种格式的输入
@@ -24,6 +25,7 @@
 - 数据存储：使用 SQLite 存储用户和评论数据
 - 异步处理：使用 `httpx` 异步客户端提高性能
 - 签名算法：集成抖音最新的签名算法
+- Cookie 管理：支持验证和更新 cookie
 
 ## API 接口文档
 
@@ -62,7 +64,44 @@ GET /api/users/me
 Authorization: Bearer <your_token>
 ```
 
-### 5. 评论采集
+### 5. 验证 Cookie
+```http
+GET /api/cookie/verify
+Authorization: Bearer <your_token>
+```
+返回示例：
+```json
+{
+    "valid": true,
+    "message": "Cookie 有效",
+    "expires_in": "未知"
+}
+```
+
+### 6. 更新 Cookie
+```http
+POST /api/cookie/update
+Authorization: Bearer <your_token>
+Content-Type: application/json
+
+{
+    "cookie": "your_new_cookie_here"
+}
+```
+返回示例：
+```json
+{
+    "success": true,
+    "message": "Cookie 更新成功",
+    "verify_result": {
+        "valid": true,
+        "message": "Cookie 有效",
+        "expires_in": "未知"
+    }
+}
+```
+
+### 7. 评论采集
 ```http
 POST /api/comments/collect
 Authorization: Bearer <your_token>
@@ -83,7 +122,7 @@ Content-Type: application/json
 https://www.douyin.com/video/7431759837333130523
 ```
 
-### 6. 获取评论
+### 8. 获取评论
 ```http
 GET /api/comments/<video_id>?page=1&per_page=10
 Authorization: Bearer <your_token>
@@ -174,6 +213,11 @@ TOKEN=$(echo $response | jq -r '.access_token')
 echo "测试获取用户信息..."
 curl -H "Authorization: Bearer $TOKEN" $BASE_URL/users/me
 
+# 验证 cookie 状态
+echo "测试验证 cookie 状态..."
+curl -H "Authorization: Bearer $TOKEN" \
+     $BASE_URL/cookie/verify
+
 # 采集评论
 echo "测试评论采集..."
 curl -X POST -H "Authorization: Bearer $TOKEN" \
@@ -207,7 +251,21 @@ curl -X POST -H "Content-Type: application/json" \
      http://localhost:8080/api/users/login
 ```
 
-3. 使用 token 采集评论
+3. 验证 cookie 状态
+```bash
+curl -H "Authorization: Bearer your_token" \
+     http://localhost:8080/api/cookie/verify
+```
+
+4. 更新 cookie（如果需要）
+```bash
+curl -X POST -H "Authorization: Bearer your_token" \
+     -H "Content-Type: application/json" \
+     -d '{"cookie":"your_new_cookie_here"}' \
+     http://localhost:8080/api/cookie/update
+```
+
+5. 使用 token 采集评论
 ```bash
 curl -X POST -H "Authorization: Bearer your_token" \
      -H "Content-Type: application/json" \
@@ -224,6 +282,8 @@ curl -X POST -H "Authorization: Bearer your_token" \
 2. **Cookie 相关问题**
    - 确保 cookie.txt 文件存在且包含有效的 cookie
    - cookie 格式必须完整，不能缺少关键字段
+   - 使用 `/api/cookie/verify` 接口验证 cookie 是否有效
+   - 如果 cookie 失效，使用 `/api/cookie/update` 接口更新
 
 3. **数据库错误**
    - 检查数据库文件权限

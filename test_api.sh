@@ -157,4 +157,47 @@ for video_url in "${VIDEO_URLS[@]}"; do
     fi
 done
 
+# 测试cookie验证接口
+print_message $YELLOW "\n6. 测试cookie验证接口..."
+cookie_verify_response=$(curl -s -k -H "Authorization: Bearer $TOKEN" $BASE_URL/cookie/verify)
+if [[ $cookie_verify_response == *"valid"* ]]; then
+    print_message $GREEN "Cookie验证成功: $cookie_verify_response"
+else
+    print_message $RED "Cookie验证失败: $cookie_verify_response"
+fi
+
+# 测试cookie更新接口
+print_message $YELLOW "\n7. 测试cookie更新接口..."
+# 从cookie.txt读取cookie内容
+COOKIE_CONTENT=$(cat $COOKIE_FILE)
+cookie_update_response=$(curl -s -k -X POST -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d "{\"cookie\":\"$COOKIE_CONTENT\"}" \
+     $BASE_URL/cookie/update)
+if [[ $cookie_update_response == *"success"* ]]; then
+    print_message $GREEN "Cookie更新成功: $cookie_update_response"
+else
+    print_message $RED "Cookie更新失败: $cookie_update_response"
+fi
+
+# 测试JSON格式cookie更新接口
+print_message $YELLOW "\n8. 测试JSON格式cookie更新接口..."
+# 构造JSON格式的cookie数据
+JSON_COOKIE='[
+    {"name": "sessionid_ss", "value": "test_session_id"},
+    {"name": "passport_csrf_token", "value": "test_csrf_token"},
+    {"name": "passport_csrf_token_default", "value": "test_csrf_token_default"},
+    {"name": "s_v_web_id", "value": "test_web_id"},
+    {"name": "ttwid", "value": "test_ttwid"}
+]'
+json_cookie_update_response=$(curl -s -k -X POST -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d "{\"cookies\":$JSON_COOKIE}" \
+     $BASE_URL/cookie/update)
+if [[ $json_cookie_update_response == *"success"* ]]; then
+    print_message $GREEN "JSON格式Cookie更新成功: $json_cookie_update_response"
+else
+    print_message $RED "JSON格式Cookie更新失败: $json_cookie_update_response"
+fi
+
 print_message $YELLOW "\n所有测试完成!" 

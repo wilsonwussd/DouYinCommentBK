@@ -1,0 +1,49 @@
+{
+  "cookie": [
+    {
+        "domain": ".douyin.com",
+        "name": "UIFID",
+        "value": "7457f5ef2178e63069f24974fa04cbf9321b3fa7afdb44208071bc08e7f7084f87c135b08c758a98733a50fe540145908a52c93c0c9f1c34d0dcac0fb7b969981751755459bb91b503bc3610e8e970ae60d634ef36e469677fa1b130df5b1681a8284ac98aaf0903832d6cdec41caa7310233ed60a21a063b5bd45a7e7648b7eeea74c5989f6f3c02d978b61d5030e5f0a30c946134d9cce0f26f047dba5b1c7"
+    },
+    {
+        "domain": ".douyin.com",
+        "name": "sessionid_ss",
+        "value": "b3780689e5e475ce215a568312c37028"
+    },
+    {
+        "domain": ".douyin.com",
+        "name": "passport_auth_status_ss",
+        "value": "4389a9216145788e6745676eb65cf8b6%2Cedd6264b307d306c4696eef742e270c2"
+    },
+    {
+        "domain": "www.douyin.com",
+        "name": "csrf_session_id",
+        "value": "a8193b5645de75dcc9d46754cd146a2f"
+    },
+    {
+        "domain": ".douyin.com",
+        "name": "toutiao_sso_user",
+        "value": "62502bb7b5fe8221af28c30faf7abd42"
+    },
+    {
+        "domain": ".douyin.com",
+        "name": "passport_mfa_token",
+        "value": "CjVYEJ3dqLwJ1ET%2F1c9LpyLcgg4KRaeXcwEoaVMkZfUi0ojT3HlXzd%2FYMWz3d9gxVXkLPtb7hRpKCjwJj%2BToWWNzV9S%2BEK2Lmksq9ZVJZpltJgzExNOtS0J%2F9rIhsTZ12NlsKpqo8fIpzAjSs%2BiXDYiwFSWRIWYQiaTkDRj2sdFsIAIiAQMXcL3G"
+    },
+    {
+        "domain": ".douyin.com",
+        "name": "sid_ucp_sso_v1",
+        "value": "1.0.0-KDY4ZjhlNmQwOTE0NDI2Njg5YjRmZjJiZWFjNWM5MGRkY2NjNzY3YTQKHwjAga6qvAIQ2duSvAYY7zEgDDDT4svSBTgGQPQHSAYaAmhsIiA2MjUwMmJiN2I1ZmU4MjIxYWYyOGMzMGZhZjdhYmQ0Mg"
+    },
+    {
+        "domain": ".douyin.com",
+        "name": "ttwid",
+        "value": "1%7CxJenerC0j1v_H16Z2o5vRdG8ddos5SQuVIkVVpMItUg%7C1737440127%7Ce0b7c08d640dac7d832f3cda5cf6cc2eb269b6f5284582cb0d951c9aefc4c62c"
+    },
+    {
+        "domain": "www.douyin.com",
+        "name": "s_v_web_id",
+        "value": "verify_m48kob9w_c87351ca_8007_21f8_25b5_c45039096702"
+    }
+  ]
+} 

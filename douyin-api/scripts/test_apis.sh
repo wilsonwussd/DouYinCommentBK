@@ -35,6 +35,19 @@ echo "测试环境变量..."
 curl -H "Authorization: Bearer $TOKEN" $BASE_URL/test/env
 echo -e "\n"
 
+# 验证 cookie
+echo "测试验证 cookie..."
+curl -H "Authorization: Bearer $TOKEN" $BASE_URL/cookie/verify
+echo -e "\n"
+
+# 更新 cookie（这里使用示例 cookie，实际使用时需要替换为有效的 cookie）
+echo "测试更新 cookie..."
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"cookie":"your_new_cookie_here"}' \
+     $BASE_URL/cookie/update
+echo -e "\n"
+
 # 采集评论
 echo "测试评论采集..."
 curl -X POST -H "Authorization: Bearer $TOKEN" \

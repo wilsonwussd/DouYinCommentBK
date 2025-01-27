@@ -154,16 +154,23 @@ def extract_video_id(url_or_id: str) -> str:
     # 如果无法提取，返回原始输入
     return url_or_id
 
-@api.route('/comments/collect', methods=['POST'])
+@api.route('/comments/collect', methods=['POST', 'GET'])
 @jwt_required()
 async def collect_comments():
     """采集视频评论"""
     try:
-        data = request.get_json()
-        video_id = data.get('video_id')
-        max_comments = data.get('max_comments', 100)
-        page = data.get('page', 1)
-        per_page = data.get('per_page', 100)
+        # 从请求中获取参数
+        if request.method == 'POST':
+            data = request.get_json()
+            video_id = data.get('video_id')
+            max_comments = data.get('max_comments', 100)
+            page = data.get('page', 1)
+            per_page = data.get('per_page', 100)
+        else:  # GET方法
+            video_id = request.args.get('video_id')
+            max_comments = request.args.get('max_comments', 100, type=int)
+            page = request.args.get('page', 1, type=int)
+            per_page = request.args.get('per_page', 100, type=int)
         
         if not video_id:
             return jsonify({'error': '请提供视频ID'}), 400
@@ -190,7 +197,12 @@ async def collect_comments():
         
     except Exception as e:
         current_app.logger.error(f"采集评论失败: {str(e)}")
-        return jsonify({'error': '采集评论失败'}), 500
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({
+            'error': '采集评论失败',
+            'detail': str(e),
+            'traceback': traceback.format_exc()
+        }), 500
 
 @api.route('/comments/<video_id>', methods=['GET'])
 @jwt_required()
@@ -217,4 +229,56 @@ def get_comments(video_id):
             'error': '获取评论失败',
             'detail': str(e),
             'traceback': traceback.format_exc()
+        }), 500
+
+@api.route('/cookie/verify', methods=['GET'])
+@jwt_required()
+async def verify_cookie():
+    """验证 cookie 是否有效"""
+    try:
+        comment_service = CommentService()
+        result = await comment_service.verify_cookie()
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"验证cookie时出错: {str(e)}")
+        return jsonify({
+            'error': '验证cookie失败',
+            'detail': str(e)
+        }), 500
+
+@api.route('/cookie/update', methods=['POST'])
+@jwt_required()
+async def update_cookie():
+    """更新 cookie"""
+    try:
+        data = request.get_json()
+        
+        # 支持两种格式：字符串格式和 JSON 数组格式
+        if isinstance(data.get('cookie'), list):
+            # JSON 数组格式
+            cookies_json = data.get('cookie')
+            comment_service = CommentService()
+            result = await comment_service.update_cookie_from_json(cookies_json)
+        elif isinstance(data.get('cookie'), str):
+            # 字符串格式
+            new_cookie = data.get('cookie')
+            if not new_cookie:
+                return jsonify({'error': '请提供新的cookie'}), 400
+            comment_service = CommentService()
+            result = await comment_service.update_cookie(new_cookie)
+        else:
+            return jsonify({'error': '无效的cookie格式，请提供字符串或JSON数组格式的cookie'}), 400
+            
+        if result['success']:
+            # 更新成功后，同时更新环境变量中的cookie
+            current_app.config['DOUYIN_COOKIE'] = result.get('cookie', '')
+            return jsonify(result)
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        logger.error(f"更新cookie时出错: {str(e)}")
+        return jsonify({
+            'error': '更新cookie失败',
+            'detail': str(e)
         }), 500 
