@@ -7,6 +7,7 @@ import sys
 import traceback
 from werkzeug.exceptions import NotFound
 from flask import jsonify, request
+from config.config import Config
 
 # 配置信息
 EXTERNAL_DOMAIN = "https://slrgzucgttzq.sealoshzh.site"
@@ -17,6 +18,7 @@ logger.add(sys.stderr, level="DEBUG", backtrace=True, diagnose=True)  # 添加�
 logger.add("logs/app.log", rotation="500 MB", level="DEBUG", backtrace=True, diagnose=True)  # 添加文件处理器
 
 app = create_app()
+app.json.ensure_ascii = False  # 确保 JSON 响应使用中文而不是 Unicode 编码
 
 if __name__ == '__main__':
     try:

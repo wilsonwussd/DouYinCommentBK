@@ -120,6 +120,33 @@ class CommentService:
             logger.exception(e)
             raise
             
+    def save_comment(self, comment_data, video_id):
+        """保存评论数据"""
+        try:
+            # 将时间戳转换为 datetime 对象
+            created_at = datetime.fromtimestamp(
+                int(comment_data.get('create_time', 0))
+            ) if comment_data.get('create_time') else None
+            
+            comment = Comment(
+                video_id=video_id,
+                comment_id=comment_data.get('cid', ''),
+                content=comment_data.get('text', ''),
+                created_at=created_at,
+                likes=comment_data.get('digg_count', 0),
+                reply_count=comment_data.get('reply_comment_total', 0),
+                user_id=comment_data.get('user', {}).get('uid', ''),
+                user_nickname=comment_data.get('user', {}).get('nickname', ''),
+                ip_location=comment_data.get('ip_label', '')
+            )
+            db.session.add(comment)
+            db.session.commit()
+            return comment
+        except Exception as e:
+            current_app.logger.error(f"保存评论失败: {str(e)}")
+            db.session.rollback()
+            raise
+            
     def save_comments(self, video_id: str, comments: list):
         """保存评论到数据库"""
         operation_id = f"save_{video_id}_{int(time.time())}"
@@ -146,18 +173,7 @@ class CommentService:
                         continue
                         
                     # 创建新评论
-                    comment = Comment(
-                        video_id=video_id,
-                        comment_id=comment_id,
-                        content=comment_data.get("text", "").encode().decode('unicode_escape'),
-                        likes=comment_data.get("digg_count", 0),
-                        user_nickname=comment_data.get("user", {}).get("nickname", ""),
-                        user_id=comment_data.get("user", {}).get("unique_id", ""),
-                        ip_location=comment_data.get("ip_label", ""),
-                        reply_count=comment_data.get("reply_comment_total", 0),
-                        created_at=datetime.fromtimestamp(comment_data.get("create_time", 0))
-                    )
-                    db.session.add(comment)
+                    comment = self.save_comment(comment_data, video_id)
                     saved_count += 1
                     
                     if index % 10 == 0:  # 每10条评论记录一次进度
@@ -237,7 +253,7 @@ class CommentService:
         try:
             return {
                 'comment_id': str(comment_data.get('cid', '')),
-                'content': comment_data.get('text', '').encode().decode('unicode_escape'),  # 解码 Unicode
+                'content': comment_data.get('text', ''),
                 'created_at': datetime.fromtimestamp(
                     int(comment_data.get('create_time', 0))
                 ).strftime('%Y-%m-%dT%H:%M:%S'),

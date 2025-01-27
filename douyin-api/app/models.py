@@ -39,27 +39,17 @@ class Comment(db.Model):
     collected_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def to_dict(self):
-        def decode_unicode(text):
-            try:
-                if not text:
-                    return ''
-                # 处理 emoji 表情等 UTF-16 编码
-                text = text.encode('utf-8').decode('unicode_escape')
-                return text
-            except Exception as e:
-                print(f"解码失败: {e}")
-                return text
-                
+        """将评论对象转换为字典"""
         return {
             'id': self.id,
             'video_id': self.video_id,
             'comment_id': self.comment_id,
-            'content': decode_unicode(self.content),
+            'content': self.content if self.content else '',
+            'created_at': self.created_at.strftime('%Y-%m-%dT%H:%M:%S') if self.created_at else '',
             'likes': self.likes,
-            'user_nickname': decode_unicode(self.user_nickname),
-            'user_id': self.user_id,
-            'ip_location': decode_unicode(self.ip_location),
             'reply_count': self.reply_count,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'collected_at': self.collected_at.isoformat()
+            'user_id': self.user_id,
+            'user_nickname': self.user_nickname if self.user_nickname else '',
+            'ip_location': self.ip_location if self.ip_location else '',
+            'collected_at': self.collected_at.strftime('%Y-%m-%dT%H:%M:%S.%f') if self.collected_at else ''
         } 
