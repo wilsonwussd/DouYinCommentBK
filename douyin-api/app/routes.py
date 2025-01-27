@@ -179,23 +179,13 @@ async def collect_comments():
         # 采集评论
         comments = await comment_service.collect_comments(video_id, max_comments)
         
-        # 关闭异步客户端
-        await comment_service.client.aclose()
-        
         if not comments:
             return jsonify({'message': '没有找到评论'}), 404
             
-        # 处理评论数据
-        processed_comments = []
-        for comment in comments:
-            processed_comment = comment_service._process_comment(comment)
-            if processed_comment:
-                processed_comments.append(processed_comment)
-            
         return jsonify({
             'video_id': video_id,
-            'total': len(processed_comments),
-            'comments': processed_comments
+            'total': len(comments),
+            'comments': comments
         })
         
     except Exception as e:

@@ -18,17 +18,11 @@ sys.path.append(douyin_comments_dir)
 from common import common
 
 class CommentService:
-    def __init__(self, cookie=None):
-        """初始化评论服务
-        
-        Args:
-            cookie: 抖音 cookie，如果为 None 则从环境变量或文件加载
-        """
+    def __init__(self):
         self.base_url = "https://www.douyin.com/aweme/v1/web/comment/list/"
-        self.cookie = cookie if cookie else self._get_cookie()
-        self.client = httpx.AsyncClient(timeout=30)
+        self.cookie = self._get_cookie()
         self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
-        
+
     def _get_cookie(self) -> str:
         """从环境变量或文件加载cookie"""
         # 首先尝试从环境变量获取
@@ -71,7 +65,7 @@ class CommentService:
             # 使用 common 函数处理参数和生成签名
             params, headers = common(self.base_url, params, headers)
             
-            async with self.client as client:
+            async with httpx.AsyncClient(timeout=60.0) as client:
                 response = await client.get(self.base_url, params=params, headers=headers)
                 response.raise_for_status()
                 
@@ -84,17 +78,18 @@ class CommentService:
         except Exception as e:
             logger.error(f"获取评论失败: {str(e)}")
             raise
-            
+
     async def collect_comments(self, video_id: str, max_comments: int = 100):
         """采集指定数量的评论"""
         collected_comments = []
         cursor = "0"
         retries = 3
+        batch_size = min(20, max_comments)  # 控制每批次的大小
         
         try:
             while len(collected_comments) < max_comments and retries > 0:
                 try:
-                    comments, has_more = await self.fetch_comments(video_id, cursor)
+                    comments, has_more = await self.fetch_comments(video_id, cursor, str(batch_size))
                     
                     if not comments:
                         break
@@ -114,13 +109,20 @@ class CommentService:
                         raise
                     logger.warning(f"获取评论失败，剩余重试次数: {retries}")
                     await asyncio.sleep(2)
-                    
-            return collected_comments[:max_comments]
             
+            # 处理评论数据
+            processed_comments = []
+            for comment in collected_comments[:max_comments]:
+                processed_comment = self._process_comment(comment)
+                if processed_comment:
+                    processed_comments.append(processed_comment)
+                    
+            return processed_comments
+                
         except Exception as e:
             logger.error(f"采集评论失败: {str(e)}")
             raise
-            
+
     def save_comment(self, comment_data, video_id):
         """保存评论数据"""
         try:

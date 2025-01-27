@@ -1,53 +1,81 @@
 #!/bin/bash
 
-echo "开始部署抖音评论采集 API 服务..."
+# 设置颜色输出
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# 打印带颜色的消息
+print_message() {
+    local color=$1
+    local message=$2
+    echo -e "${color}${message}${NC}"
+}
+
+# 检查系统要求
+print_message $YELLOW "检查系统要求..."
 
 # 检查 Python 版本
-if ! command -v python3 &> /dev/null; then
-    echo "错误: 未找到 Python3，请先安装 Python3"
+python3 --version >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+    print_message $RED "错误: 未安装 Python3"
     exit 1
 fi
 
-# 检查 Python 版本号
-python_version=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-if (( $(echo "$python_version < 3.8" | bc -l) )); then
-    echo "错误: Python 版本必须 >= 3.8，当前版本: $python_version"
+# 检查 Node.js
+node --version >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+    print_message $RED "错误: 未安装 Node.js"
     exit 1
 fi
 
-# 创建并激活虚拟环境
-echo "创建虚拟环境..."
+# 检查 SQLite3
+sqlite3 --version >/dev/null 2>&1
+if [ $? -ne 0 ]; then
+    print_message $RED "错误: 未安装 SQLite3"
+    exit 1
+fi
+
+print_message $GREEN "系统要求检查通过"
+
+# 创建虚拟环境
+print_message $YELLOW "创建虚拟环境..."
 python3 -m venv venv
 source venv/bin/activate
 
 # 安装依赖
-echo "安装项目依赖..."
+print_message $YELLOW "安装 Python 依赖..."
+pip install --upgrade pip
 pip install -r requirements.txt
 
-# 创建必要的目录
-echo "创建日志目录..."
-mkdir -p logs
+# 初始化数据库
+print_message $YELLOW "初始化数据库..."
+python3 -c "
+from douyin-api.app import create_app, db
+app = create_app()
+with app.app_context():
+    db.create_all()
+"
 
-# 检查环境变量
-if [ -z "$DOUYIN_COOKIE" ]; then
-    echo "警告: 未设置 DOUYIN_COOKIE 环境变量"
-    echo "请设置 DOUYIN_COOKIE 环境变量后再运行服务"
-    echo "示例: export DOUYIN_COOKIE='your_cookie_here'"
-    exit 1
-fi
+# 设置权限
+print_message $YELLOW "设置文件权限..."
+chmod +x restart_server.sh
+chmod +x test_api.sh
 
-if [ -z "$SECRET_KEY" ]; then
-    echo "生成随机 SECRET_KEY..."
-    export SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
-fi
-
-if [ -z "$JWT_SECRET_KEY" ]; then
-    echo "生成随机 JWT_SECRET_KEY..."
-    export JWT_SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')
+# 检查配置文件
+print_message $YELLOW "检查配置文件..."
+if [ ! -f "cookie.txt" ]; then
+    print_message $RED "警告: cookie.txt 文件不存在"
+    print_message $YELLOW "请创建 cookie.txt 文件并填入抖音 cookie"
 fi
 
 # 启动服务
-echo "启动 API 服务..."
-PYTHONPATH=$(pwd) python3 run.py
+print_message $YELLOW "启动服务..."
+./restart_server.sh
 
-echo "部署完成!" 
+print_message $GREEN "部署完成！"
+print_message $YELLOW "请确保："
+print_message $YELLOW "1. cookie.txt 文件已正确配置"
+print_message $YELLOW "2. 检查 server.log 确认服务启动状态"
+print_message $YELLOW "3. 运行 ./test_api.sh 测试服务功能" 
