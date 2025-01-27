@@ -8,6 +8,7 @@ import traceback
 from loguru import logger
 from datetime import datetime
 from sqlalchemy import text
+import re
 
 api = Blueprint('api', __name__)
 
@@ -125,79 +126,81 @@ def get_user_info():
             'detail': str(e)
         }), 500
 
+def extract_video_id(url_or_id: str) -> str:
+    """从URL或ID字符串中提取视频ID
+    
+    Args:
+        url_or_id: 视频URL或ID字符串
+        
+    Returns:
+        str: 提取的视频ID
+    """
+    # 如果输入的是纯数字，直接返回
+    if url_or_id.isdigit():
+        return url_or_id
+        
+    # 尝试从URL中提取ID
+    patterns = [
+        r'video/(\d+)',  # 匹配 video/数字
+        r'/(\d+)/?$',    # 匹配URL末尾的数字
+        r'item_ids=(\d+)'  # 匹配 item_ids=数字
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url_or_id)
+        if match:
+            return match.group(1)
+            
+    # 如果无法提取，返回原始输入
+    return url_or_id
+
 @api.route('/comments/collect', methods=['POST'])
 @jwt_required()
 async def collect_comments():
-    """采集评论接口"""
+    """采集视频评论"""
     try:
         data = request.get_json()
-        if not data:
-            logger.error("Request body is empty")
-            return jsonify({'error': '请求体不能为空'}), 400
-            
         video_id = data.get('video_id')
         max_comments = data.get('max_comments', 100)
+        page = data.get('page', 1)
+        per_page = data.get('per_page', 100)
         
         if not video_id:
-            logger.error("Video ID is missing")
-            return jsonify({'error': '视频ID不能为空'}), 400
+            return jsonify({'error': '请提供视频ID'}), 400
             
-        if not isinstance(max_comments, int) or max_comments <= 0:
-            logger.error(f"Invalid max_comments value: {max_comments}")
-            return jsonify({'error': '评论数量必须是正整数'}), 400
-            
-        cookie = current_app.config.get('DOUYIN_COOKIE')
-        if not cookie:
-            logger.error("DOUYIN_COOKIE is not set in configuration")
-            return jsonify({'error': '抖音cookie未配置'}), 500
-            
-        logger.info(f"Starting comment collection for video {video_id}")
-        logger.debug(f"Cookie length: {len(cookie)}")
-        logger.debug(f"Request parameters - video_id: {video_id}, max_comments: {max_comments}")
+        # 从URL中提取视频ID（如果是完整URL）
+        video_id = extract_video_id(video_id)
+        current_app.logger.debug(f"处理后的视频ID: {video_id}")
         
-        try:
-            service = CommentService(cookie)
-            comments = await service.collect_comments(video_id, max_comments)
+        # 初始化评论服务
+        comment_service = CommentService()
+        current_app.logger.debug(f"开始采集视频评论, video_id: {video_id}, page: {page}, per_page: {per_page}")
+        
+        # 采集评论
+        comments = await comment_service.collect_comments(video_id, max_comments)
+        
+        # 关闭异步客户端
+        await comment_service.client.aclose()
+        
+        if not comments:
+            return jsonify({'message': '没有找到评论'}), 404
             
-            if not comments:
-                logger.warning(f"No comments collected for video {video_id}")
-                return jsonify({
-                    'message': '未采集到评论',
-                    'comments': []
-                }), 200
-                
-            saved_comments = Comment.query.filter_by(video_id=video_id).all()
-            logger.info(f"Successfully collected and saved {len(saved_comments)} comments")
+        # 处理评论数据
+        processed_comments = []
+        for comment in comments:
+            processed_comment = comment_service._process_comment(comment)
+            if processed_comment:
+                processed_comments.append(processed_comment)
             
-            return jsonify({
-                'message': f'成功采集 {len(comments)} 条评论',
-                'comments': [comment.to_dict() for comment in saved_comments]
-            }), 200
-            
-        except ValueError as e:
-            logger.error(f"Value error in comment collection: {str(e)}")
-            return jsonify({
-                'error': '参数错误',
-                'detail': str(e)
-            }), 400
-            
-        except Exception as e:
-            logger.error(f"Error collecting comments: {str(e)}")
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            return jsonify({
-                'error': '采集评论失败',
-                'detail': str(e),
-                'traceback': traceback.format_exc()
-            }), 500
-            
-    except Exception as e:
-        logger.error(f"API error: {str(e)}")
-        logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({
-            'error': '请求处理失败',
-            'detail': str(e),
-            'traceback': traceback.format_exc()
-        }), 500
+            'video_id': video_id,
+            'total': len(processed_comments),
+            'comments': processed_comments
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"采集评论失败: {str(e)}")
+        return jsonify({'error': '采集评论失败'}), 500
 
 @api.route('/comments/<video_id>', methods=['GET'])
 @jwt_required()

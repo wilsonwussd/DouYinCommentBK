@@ -1,49 +1,39 @@
-# 抖音评论采集后端服务
+# 抖音评论采集 API 服务
 
-## 功能说明
-- 用户认证：支持用户注册和登录，使用 JWT 进行身份验证
-- 评论采集：支持采集指定抖音视频的一级评论和二级评论
-- 评论管理：支持评论的分页查询和筛选
-- 系统监控：提供健康检查接口，监控系统状态
+一个基于 Flask + SQLite + JWT 的抖音视频评论采集服务，支持采集指定视频的一级评论。
 
-## 项目架构
-- 后端框架：Flask
-- 数据库：SQLite
-- 认证方式：JWT
-- ORM：SQLAlchemy
-- 服务器：Hypercorn
+## 最新更新
 
-## 目录结构
+### 2024-01-27 更新
+- 修复了异步调用问题，优化了评论采集逻辑
+- 修复了 `sign_x_bogus` 签名生成问题
+- 优化了视频ID提取逻辑，现支持多种格式的输入
+- 改进了错误处理和日志记录
+- 新增了服务器管理脚本
+
+### Bug 修复
+- 修复了 `common` 模块路径加载问题
+- 修复了异步客户端未正确关闭的问题
+- 修复了评论数据处理中的类型转换问题
+- 修复了 URL 解析中的视频 ID 提取问题
+
+## 功能特性
+
+- 用户认证：基于 JWT 的用户认证系统
+- 评论采集：支持采集指定视频的评论数据
+- 数据存储：使用 SQLite 存储用户和评论数据
+- 异步处理：使用 `httpx` 异步客户端提高性能
+- 签名算法：集成抖音最新的签名算法
+
+## API 接口文档
+
+### 1. 健康检查
+```http
+GET /api/health
 ```
-douyin-api/
-├── app/                # 核心代码模块
-├── config/            # 配置文件
-├── logs/              # 日志文件
-├── tests/             # 单元测试
-├── run.py             # 服务器启动文件
-└── deploy.py          # 自动化部署脚本
-```
+返回服务器和数据库状态
 
-## 部署说明
-1. 安装依赖：
-```bash
-pip install -r requirements.txt
-```
-
-2. 运行服务：
-```bash
-python run.py
-```
-
-3. 服务配置：
-- 服务地址：`0.0.0.0:8080`
-- 外部域名：`https://slrgzucgttzq.sealoshzh.site`
-
-## API 接口说明
-
-### 1. 用户相关接口
-
-#### 1.1 用户注册
+### 2. 用户注册
 ```http
 POST /api/users/register
 Content-Type: application/json
@@ -52,14 +42,9 @@ Content-Type: application/json
     "username": "your_username",
     "password": "your_password"
 }
-
-响应示例：
-{
-    "message": "注册成功"
-}
 ```
 
-#### 1.2 用户登录
+### 3. 用户登录
 ```http
 POST /api/users/login
 Content-Type: application/json
@@ -68,335 +53,185 @@ Content-Type: application/json
     "username": "your_username",
     "password": "your_password"
 }
-
-响应示例：
-{
-    "access_token": "eyJhbGciOiJIUzI1..."
-}
 ```
+返回 JWT token
 
-#### 1.3 获取用户信息
+### 4. 获取用户信息
 ```http
 GET /api/users/me
 Authorization: Bearer <your_token>
-
-响应示例：
-{
-    "username": "testuser",
-    "created_at": "2025-01-26T15:31:57.137971",
-    "last_login": "2025-01-26T15:31:57.137971",
-    "status": "active"
-}
 ```
 
-### 2. 评论相关接口
-
-#### 2.1 采集评论
+### 5. 评论采集
 ```http
 POST /api/comments/collect
 Authorization: Bearer <your_token>
 Content-Type: application/json
 
 {
-    "video_id": "7346152359719996709",
+    "video_id": "7431759837333130523",
     "max_comments": 10
 }
-
-响应示例：
-{
-    "message": "成功采集 10 条评论",
-    "video_id": "7346152359719996709"
-}
 ```
+支持以下格式的视频ID：
+- 纯数字ID
+- 完整视频URL
+- 短链接
 
-#### 2.2 查询评论
+### 6. 获取评论
 ```http
-GET /api/comments/{video_id}?page=1&per_page=5
+GET /api/comments/<video_id>?page=1&per_page=10
 Authorization: Bearer <your_token>
-
-响应示例：
-{
-    "comments": [
-        {
-            "comment_id": "7346152902128812852",
-            "content": "评论内容",
-            "created_at": "2024-01-26 12:00:00",
-            "likes": 100,
-            "reply_count": 10,
-            "user_nickname": "用户昵称"
-        }
-    ],
-    "total": 100,
-    "page": 1,
-    "per_page": 5,
-    "total_pages": 20
-}
 ```
 
-### 3. 系统接口
+## 环境要求
 
-#### 3.1 健康检查
-```http
-GET /api/health
+- Python 3.8+
+- Node.js (用于签名生成)
+- SQLite 3
 
-响应示例：
-{
-    "status": "healthy",
-    "database": "connected",
-    "timestamp": "2025-01-26T15:40:43.596759"
-}
-```
+## 安装部署
 
-## 注意事项
-1. 所有需要认证的接口都需要在请求头中携带 `Authorization: Bearer <token>`
-2. 评论采集接口支持限制最大采集数量
-3. 评论查询接口支持分页，默认每页 10 条
-4. 系统会自动记录用户最后登录时间
-
-## 更新日志
-
-### 2025-01-26
-- 新增用户最后登录时间记录
-- 优化数据库初始化逻辑
-- 新增健康检查接口
-- 完善错误处理和日志记录
-
-### 2025-01-25
-- 项目初始化
-- 实现基础用户认证功能
-- 实现评论采集和查询功能
-
-## 功能特点
-
-- 用户注册和登录（JWT 认证）
-- 抖音视频评论采集
-- 评论数据存储和查询
-- 异步处理和并发控制
-- 详细的日志记录
-
-## 安装步骤
-
-1. 克隆项目并进入项目目录：
+1. 克隆仓库
 ```bash
 git clone <repository_url>
 cd douyin-api
 ```
 
-2. 创建并激活虚拟环境：
-```bash
-python3 -m venv venv
-source venv/bin/activate  # Linux/Mac
-# 或
-.\venv\Scripts\activate  # Windows
-```
-
-3. 安装依赖：
+2. 安装依赖
 ```bash
 pip install -r requirements.txt
 ```
 
-4. 设置环境变量：
+3. 配置环境变量
 ```bash
-export DOUYIN_COOKIE="your_douyin_cookie"  # 替换为你的抖音 cookie
-export FLASK_DEBUG=1  # 开发环境设置
+# 创建 cookie.txt 文件并填入抖音 cookie
+echo "your_douyin_cookie" > cookie.txt
 ```
 
-## 快速开始
+4. 初始化数据库
+```bash
+python init_db.py
+```
 
-1. 启动服务器：
+5. 启动服务
 ```bash
 python run.py
 ```
 
-2. 服务器将在 http://localhost:5000 启动
+## 管理脚本
 
-## API 文档
-
-### 1. 用户注册
-
-- **URL**: `/api/register`
-- **方法**: `POST`
-- **请求体**:
-```json
-{
-    "username": "your_username",
-    "password": "your_password"
-}
-```
-- **响应示例**:
-```json
-{
-    "message": "注册成功"
-}
-```
-
-### 2. 用户登录
-
-- **URL**: `/api/login`
-- **方法**: `POST`
-- **请求体**:
-```json
-{
-    "username": "your_username",
-    "password": "your_password"
-}
-```
-- **响应示例**:
-```json
-{
-    "access_token": "your_jwt_token"
-}
-```
-
-### 3. 采集评论
-
-- **URL**: `/api/comments/collect`
-- **方法**: `POST`
-- **请求头**:
-  - `Authorization: Bearer your_jwt_token`
-- **请求体**:
-```json
-{
-    "video_id": "7346152359719996709",
-    "max_comments": 10
-}
-```
-- **响应示例**:
-```json
-{
-    "message": "成功采集 10 条评论",
-    "comments": [
-        {
-            "id": 1,
-            "video_id": "7346152359719996709",
-            "comment_id": "7349050237821141810",
-            "content": "评论内容",
-            "likes": 4282,
-            "user_nickname": "用户昵称",
-            "user_id": "user123",
-            "ip_location": "北京",
-            "reply_count": 65,
-            "created_at": "2024-03-22T05:08:22",
-            "collected_at": "2025-01-26T12:33:14.866962"
-        }
-    ]
-}
-```
-
-### 4. 查询评论
-
-- **URL**: `/api/comments/<video_id>`
-- **方法**: `GET`
-- **请求头**:
-  - `Authorization: Bearer your_jwt_token`
-- **查询参数**:
-  - `page`: 页码（默认 1）
-  - `per_page`: 每页数量（默认 20）
-- **响应示例**:
-```json
-{
-    "total": 100,
-    "pages": 5,
-    "current_page": 1,
-    "comments": [
-        {
-            "id": 1,
-            "video_id": "7346152359719996709",
-            "comment_id": "7349050237821141810",
-            "content": "评论内容",
-            "likes": 4282,
-            "user_nickname": "用户昵称",
-            "user_id": "user123",
-            "ip_location": "北京",
-            "reply_count": 65,
-            "created_at": "2024-03-22T05:08:22",
-            "collected_at": "2025-01-26T12:33:14.866962"
-        }
-    ]
-}
-```
-
-### 5. 测试环境变量
-
-- **URL**: `/api/test/env`
-- **方法**: `GET`
-- **请求头**:
-  - `Authorization: Bearer your_jwt_token`
-- **响应示例**:
-```json
-{
-    "cookie_length": 2507,
-    "cookie_preview": "cookie_preview_string",
-    "env_vars": {
-        "DOUYIN_COOKIE": "your_cookie",
-        "FLASK_DEBUG": "1"
-    }
-}
-```
-
-## 依赖库
-
-项目依赖以下主要库：
-
-```
-Flask==3.0.0
-Flask-SQLAlchemy==3.1.1
-Flask-JWT-Extended==4.6.0
-httpx==0.24.0
-loguru==0.7.0
-hypercorn==0.15.0
-```
-
-完整的依赖列表请参见 `requirements.txt`。
-
-## 一键部署脚本
-
-创建 `deploy.sh` 脚本：
-
+### 重启服务器
 ```bash
 #!/bin/bash
+# restart_server.sh
 
-# 检查 Python 版本
-python3 --version || { echo "请先安装 Python 3"; exit 1; }
-
-# 创建虚拟环境
-python3 -m venv venv || { echo "创建虚拟环境失败"; exit 1; }
-
-# 激活虚拟环境
-source venv/bin/activate || { echo "激活虚拟环境失败"; exit 1; }
-
-# 安装依赖
-pip install -r requirements.txt || { echo "安装依赖失败"; exit 1; }
-
-# 检查 cookie 环境变量
-if [ -z "$DOUYIN_COOKIE" ]; then
-    echo "请设置 DOUYIN_COOKIE 环境变量"
-    exit 1
+echo "正在停止当前服务..."
+pid=$(pgrep -f "python.*run.py")
+if [ ! -z "$pid" ]; then
+    kill $pid
+    sleep 2
 fi
 
-# 启动服务器
-export FLASK_DEBUG=1
-python run.py
+echo "正在启动服务..."
+cd /path/to/douyin-api
+python3 run.py &
+echo "服务已重启"
 ```
 
-使用方法：
-
-1. 给脚本添加执行权限：
+### 测试所有接口
 ```bash
-chmod +x deploy.sh
+#!/bin/bash
+# test_apis.sh
+
+# 设置基础 URL
+BASE_URL="https://your-domain.com/api"
+TOKEN=""
+
+# 测试健康检查
+echo "测试健康检查接口..."
+curl $BASE_URL/health
+
+# 注册新用户
+echo "测试用户注册..."
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"username":"testuser","password":"testpass"}' \
+     $BASE_URL/users/register
+
+# 用户登录
+echo "测试用户登录..."
+response=$(curl -X POST -H "Content-Type: application/json" \
+     -d '{"username":"testuser","password":"testpass"}' \
+     $BASE_URL/users/login)
+TOKEN=$(echo $response | jq -r '.access_token')
+
+# 获取用户信息
+echo "测试获取用户信息..."
+curl -H "Authorization: Bearer $TOKEN" $BASE_URL/users/me
+
+# 采集评论
+echo "测试评论采集..."
+curl -X POST -H "Authorization: Bearer $TOKEN" \
+     -H "Content-Type: application/json" \
+     -d '{"video_id":"7431759837333130523","max_comments":10}' \
+     $BASE_URL/comments/collect
+
+# 获取评论
+echo "测试获取评论..."
+curl -H "Authorization: Bearer $TOKEN" \
+     "$BASE_URL/comments/7431759837333130523?page=1&per_page=10"
 ```
 
-2. 运行脚本：
+## 使用说明
+
+1. 确保服务器正常运行
 ```bash
-./deploy.sh
+curl http://localhost:8080/api/health
 ```
 
-## 注意事项
+2. 注册新用户并获取 token
+```bash
+# 注册
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"username":"your_username","password":"your_password"}' \
+     http://localhost:8080/api/users/register
 
-1. 请确保设置了正确的抖音 cookie
-2. 评论采集有频率限制，请合理设置采集参数
-3. 建议在生产环境中关闭 debug 模式
-4. 定期备份 SQLite 数据库文件
+# 登录
+curl -X POST -H "Content-Type: application/json" \
+     -d '{"username":"your_username","password":"your_password"}' \
+     http://localhost:8080/api/users/login
+```
+
+3. 使用 token 采集评论
+```bash
+curl -X POST -H "Authorization: Bearer your_token" \
+     -H "Content-Type: application/json" \
+     -d '{"video_id":"video_id_here","max_comments":10}' \
+     http://localhost:8080/api/comments/collect
+```
+
+## 常见问题
+
+1. **签名生成失败**
+   - 检查 Node.js 是否正确安装
+   - 确保 douyin.js 文件存在且有正确的权限
+
+2. **Cookie 相关问题**
+   - 确保 cookie.txt 文件存在且包含有效的 cookie
+   - cookie 格式必须完整，不能缺少关键字段
+
+3. **数据库错误**
+   - 检查数据库文件权限
+   - 确保 SQLite 正确安装
+
+## 贡献指南
+
+欢迎提交 Issue 和 Pull Request。在提交 PR 前，请确保：
+
+1. 代码符合 PEP 8 规范
+2. 添加了必要的测试
+3. 更新了文档
+4. 所有测试用例通过
 
 ## 许可证
 

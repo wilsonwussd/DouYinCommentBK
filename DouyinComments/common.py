@@ -5,6 +5,7 @@ import re
 import random
 import cookiesparser
 import platform
+import os
 from loguru import logger
 from typing import Optional, Dict, Tuple
 from retry import retry
@@ -69,7 +70,8 @@ else:
 
 try:
     # 加载签名脚本
-    with open('douyin.js', 'r', encoding='utf-8') as f:
+    script_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'douyin.js')
+    with open(script_path, 'r', encoding='utf-8') as f:
         js_code = f.read()
         # 处理可能的编码问题
         js_code = js_code.replace('\ufeff', '')  # 移除BOM
