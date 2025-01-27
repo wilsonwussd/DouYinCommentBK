@@ -161,11 +161,15 @@ async def collect_comments():
     try:
         # 从请求中获取参数
         if request.method == 'POST':
-            data = request.get_json()
-            video_id = data.get('video_id')
-            max_comments = data.get('max_comments', 100)
-            page = data.get('page', 1)
-            per_page = data.get('per_page', 100)
+            try:
+                data = request.get_json()
+                video_id = data.get('video_id')
+                max_comments = data.get('max_comments', 100)
+                page = data.get('page', 1)
+                per_page = data.get('per_page', 100)
+            except Exception as e:
+                logger.error(f"解析JSON数据失败: {str(e)}")
+                return jsonify({'error': '无效的请求数据格式'}), 400
         else:  # GET方法
             video_id = request.args.get('video_id')
             max_comments = request.args.get('max_comments', 100, type=int)
@@ -194,7 +198,6 @@ async def collect_comments():
             'total': len(comments),
             'comments': comments
         })
-        
     except Exception as e:
         current_app.logger.error(f"采集评论失败: {str(e)}")
         current_app.logger.error(traceback.format_exc())
